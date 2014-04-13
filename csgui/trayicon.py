@@ -23,11 +23,25 @@ class TrayIcon(wx.TaskBarIcon):
 
         try:
             for n, share in enumerate(self.main.client.list_shares()):
-                # TODO: make this into a submenu with open / detach / etc options
                 log.info("Adding menu item for share: %s" % share)
-                self._id_to_path[3000 + n] = share["path"]
-                m_open = self.menu.Append(3000 + n, '%s\t%s' % (share["path"], share["status"]))
+                submenu = wx.Menu()
+
+                self._id_to_path[n] = share["path"]
+
+                # Menu items need unique IDs
+                # 300X = Open, 310X = create, 320X = Detach
+                # ID % 100 = share ID
+                # FIXME: This will break with >100 shares
+                m_open = submenu.Append(3000 + n, 'Open')
                 self.Bind(wx.EVT_MENU, self.OnOpen, m_open)
+
+                m_create_code = submenu.Append(3100 + n, 'Create Access Code')
+                self.Bind(wx.EVT_MENU, self.OnCreateCode, m_create_code)
+
+                m_detach = submenu.Append(3200 + n, 'Detach')
+                self.Bind(wx.EVT_MENU, self.OnDetach, m_detach)
+
+                self.menu.AppendSubMenu(submenu, share["path"])
 
             self.menu.AppendSeparator()
             m_create = self.menu.Append(wx.ID_ADD, '&Create New Share')
@@ -46,13 +60,36 @@ class TrayIcon(wx.TaskBarIcon):
         self.PopupMenu(self.menu)
 
     def OnOpen(self, evt):
-        path = self._id_to_path[evt.GetId()]
+        path = self._id_to_path[evt.GetId() % 100]
         log.info("Opening %s" % path)
 
         plat = platform.platform()
+        # FIXME: this is blocking...
         if "Windows" in plat:
             os.startfile(path)
         elif "Darwin" in plat:
             os.system('open "%s"' % path)
         else:
             os.system('xdg-open "%s"' % path)
+
+    def OnCreateCode(self, evt):
+        path = self._id_to_path[evt.GetId() % 100]
+        log.info("Creating access code for %s" % path)
+
+        mode = "read_write"
+
+        code = self.main.client.create_access_code(path, mode)
+
+        d_code = wx.TextEntryDialog(
+            self.main,
+            "Send this code to the other PC via a secure channel",
+            'Access Code', code
+        )
+        d_code.ShowModal()
+
+
+    def OnDetach(self, evt):
+        path = self._id_to_path[evt.GetId() % 100]
+        log.info("Detaching %s" % path)
+
+        self.main.client.remove_share(path)

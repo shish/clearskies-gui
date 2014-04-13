@@ -112,18 +112,19 @@ class MainFrame(wx.Frame):
             self.Show(True)
 
     def __init__(self, parent):
+        log.info("Loading settings")
         self.settings = {
             "start-tray": True,
         }
 
         self.client = ClearSkies()
-
         self.OnConnect(None)
 
         self.__init_gui(parent)
 
     def OnConnect(self, evt):
         try:
+            log.info("Connecting to daemon")
             self.client.connect()
         except ClientException as e:
             dlg = wx.MessageDialog(
