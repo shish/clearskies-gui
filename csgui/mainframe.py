@@ -21,10 +21,10 @@ class MainFrame(wx.Frame):
         menu = wx.Menu()
         m_create = menu.Append(wx.ID_ADD, "&Create Share\tAlt-C", "Create new share.")
         self.Bind(wx.EVT_MENU, self.OnCreate, m_create)
-        m_attach = menu.Append(wx.ID_OPEN, "&Attach Share\tAlt-A", "Attach to existing share.")
+        m_attach = menu.Append(wx.ID_COPY, "&Attach Share\tAlt-A", "Attach to existing share.")
         self.Bind(wx.EVT_MENU, self.OnAttach, m_attach)
         menu.AppendSeparator()
-        m_exit = menu.Append(wx.ID_EXIT, "E&xit\tAlt-X", "Close window and exit program.")
+        m_exit = menu.Append(wx.ID_EXIT, "")
         self.Bind(wx.EVT_MENU, self.OnClose, m_exit)
         menu_bar.Append(menu, "&File")
 
@@ -46,7 +46,7 @@ class MainFrame(wx.Frame):
 
         ################################################################
         menu = wx.Menu()
-        m_about = menu.Append(wx.ID_ABOUT, "&About", "Information about this program")
+        m_about = menu.Append(wx.ID_ABOUT, "")
         self.Bind(wx.EVT_MENU, self.OnAbout, m_about)
         menu_bar.Append(menu, "&Help")
 
@@ -131,7 +131,7 @@ class MainFrame(wx.Frame):
                 None,
                 "Error connecting to daemon:\n%s" % e,
                 "CSGUI Error",
-                wx.ICON_ERROR|wx.OK
+                wx.ICON_ERROR | wx.OK
             )
             dlg.ShowModal()
             log.exception("Error connecting to daemon: %s", e)
