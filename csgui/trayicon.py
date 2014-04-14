@@ -26,41 +26,39 @@ class TrayIcon(wx.TaskBarIcon):
                 log.info("Adding menu item for share: %s" % share)
                 submenu = wx.Menu()
 
-                self._id_to_path[n] = share["path"]
+                self._id_to_path[submenu] = share["path"]
 
-                # Menu items need unique IDs
-                # 300X = Open, 310X = create, 320X = Detach
-                # ID % 100 = share ID
-                # FIXME: This will break with >100 shares
-                m_open = submenu.Append(3000 + n, 'Open')
-                self.Bind(wx.EVT_MENU, self.OnOpen, m_open)
+                m_open = submenu.Append(wx.ID_OPEN, 'Open')
+                submenu.Bind(wx.EVT_MENU, self.OnOpen, m_open)
 
-                m_create_code = submenu.Append(3100 + n, 'Create Access Code')
-                self.Bind(wx.EVT_MENU, self.OnCreateCode, m_create_code)
+                m_create_code = submenu.Append(wx.ID_ADD, 'Create Access Code')
+                submenu.Bind(wx.EVT_MENU, self.OnCreateCode, m_create_code)
 
-                m_detach = submenu.Append(3200 + n, 'Detach')
-                self.Bind(wx.EVT_MENU, self.OnDetach, m_detach)
+                m_detach = submenu.Append(wx.ID_CLOSE, 'Detach')
+                submenu.Bind(wx.EVT_MENU, self.OnDetach, m_detach)
 
                 self.menu.AppendSubMenu(submenu, share["path"])
 
             self.menu.AppendSeparator()
             m_create = self.menu.Append(wx.ID_ADD, '&Create New Share')
             self.Bind(wx.EVT_MENU, self.main.OnCreate, m_create)
-            m_attach = self.menu.Append(wx.ID_OPEN, '&Attach To Share')
+            m_attach = self.menu.Append(wx.ID_COPY, '&Attach To Share')
             self.Bind(wx.EVT_MENU, self.main.OnAttach, m_attach)
         except ClientException:
-            m_connect = self.menu.Append(2000, 'C&onnect to Daemon')
+            m_connect = self.menu.Append(wx.ID_REFRESH, 'C&onnect to Daemon')
             self.Bind(wx.EVT_MENU, self.main.OnConnect, m_connect)
 
         self.menu.AppendSeparator()
-        m_about = self.menu.Append(wx.ID_ABOUT, 'A&bout')
+        m_about = self.menu.Append(wx.ID_ABOUT, '')
         self.Bind(wx.EVT_MENU, self.main.OnAbout, m_about)
-        m_exit = self.menu.Append(wx.ID_EXIT, 'E&xit')
+        m_exit = self.menu.Append(wx.ID_EXIT, '')
         self.Bind(wx.EVT_MENU, self.main.OnClose, m_exit)
+
+        self.main.SetAcceleratorTable(wx.NullAcceleratorTable)
         self.PopupMenu(self.menu)
 
     def OnOpen(self, evt):
-        path = self._id_to_path[evt.GetId() % 100]
+        path = self._id_to_path[evt.GetEventObject()]
         log.info("Opening %s" % path)
 
         plat = platform.platform()
@@ -73,7 +71,7 @@ class TrayIcon(wx.TaskBarIcon):
             os.system('xdg-open "%s"' % path)
 
     def OnCreateCode(self, evt):
-        path = self._id_to_path[evt.GetId() % 100]
+        path = self._id_to_path[evt.GetEventObject()]
         log.info("Creating access code for %s" % path)
 
         mode = "read_write"
@@ -89,7 +87,7 @@ class TrayIcon(wx.TaskBarIcon):
 
 
     def OnDetach(self, evt):
-        path = self._id_to_path[evt.GetId() % 100]
+        path = self._id_to_path[evt.GetEventObject()]
         log.info("Detaching %s" % path)
 
         self.main.client.remove_share(path)
