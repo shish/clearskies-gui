@@ -31,7 +31,7 @@ class TrayIcon(wx.TaskBarIcon):
                 m_open = submenu.Append(wx.ID_OPEN, 'Open')
                 submenu.Bind(wx.EVT_MENU, self.OnOpen, m_open)
 
-                m_create_code = submenu.Append(wx.ID_ADD, 'Create Access Code')
+                m_create_code = submenu.Append(wx.ID_ADD, 'Share')
                 submenu.Bind(wx.EVT_MENU, self.OnCreateCode, m_create_code)
 
                 m_detach = submenu.Append(wx.ID_CLOSE, 'Detach')

@@ -19,9 +19,9 @@ class MainFrame(wx.Frame):
 
         ################################################################
         menu = wx.Menu()
-        m_create = menu.Append(wx.ID_ADD, "&Create Share\tAlt-C", "Create new share.")
+        m_create = menu.Append(wx.ID_ADD, "&Create New Share\tAlt-C", "Create a new share")
         self.Bind(wx.EVT_MENU, self.OnCreate, m_create)
-        m_attach = menu.Append(wx.ID_COPY, "&Attach Share\tAlt-A", "Attach to existing share.")
+        m_attach = menu.Append(wx.ID_COPY, "&Attach To Share\tAlt-A", "Attach to an existing share")
         self.Bind(wx.EVT_MENU, self.OnAttach, m_attach)
         menu.AppendSeparator()
         m_exit = menu.Append(wx.ID_EXIT, "")
@@ -29,9 +29,27 @@ class MainFrame(wx.Frame):
         menu_bar.Append(menu, "&File")
 
         ################################################################
-        #menu = wx.Menu()
-        #
-        #menu_bar.Append(menu, "&Shares")
+        menu = wx.Menu()
+
+        menu_bar.Append(menu, "&Shares (TODO)")
+
+        ################################################################
+        menu = wx.Menu()
+        m_pause = menu.Append(2300, "&Start Daemon")
+        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
+        m_pause = menu.Append(2301, "S&top Daemon")
+        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
+        m_pause = menu.Append(2302, "&Restart Daemon")
+        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
+        menu.AppendSeparator()
+        m_pause = menu.Append(2302, "View &Log")
+        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
+        menu.AppendSeparator()
+        m_pause = menu.Append(2350, "&Pause Sync")
+        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
+        m_resume = menu.Append(2351, "R&esume Sync")
+        self.Bind(wx.EVT_MENU, self.OnCreate, m_resume)
+        menu_bar.Append(menu, "&Server (TODO)")
 
         ################################################################
         #menu = wx.Menu()
@@ -64,7 +82,7 @@ class MainFrame(wx.Frame):
         except Exception as e:
             pass
 
-        wx.Frame.__init__(self, parent, -1, "CSGUI [%s]" % __version__, size=(640, 480))
+        wx.Frame.__init__(self, parent, -1, "CSGUI [%s]" % __version__, size=(480, 320))
         self.Bind(wx.EVT_CLOSE, self.OnWinClose)
         try:
             self.SetIcons(icon_bundle(resource("icon.ico")))
@@ -76,23 +94,22 @@ class MainFrame(wx.Frame):
         self.statusbar = self.CreateStatusBar()
 
         # body of the window
-        self.launcher = wx.Panel(self)
         self.tabs = wx.Notebook(self)
 
         box = wx.BoxSizer(wx.HORIZONTAL)
-        box.Add(self.launcher, 0, wx.EXPAND)
         box.Add(self.tabs, 1, wx.EXPAND)
         #self.SetAutoLayout(True)
         self.SetSizer(box)
         self.Layout()
 
         # add content to tabs
+        self.log_area = wx.TextCtrl(self.tabs, style=wx.TE_MULTILINE)
         #self.news_panel = NewsPanel(self.tabs, "http://code.shishnet.org/eve-mlp/news.html")
         #self.config_panel = ConfigPanel(self.tabs, self)
         #self.status_panel = StatusPanel(self.tabs, self)
         #self.help_panel = NewsPanel(self.tabs, resource("help.html"))
 
-        #self.tabs.AddPage(self.news_panel, "MLP News")
+        self.tabs.AddPage(self.log_area, "Server Log")
         #self.tabs.AddPage(self.config_panel, "Settings")
         #self.tabs.AddPage(self.status_panel, "Status")
         #self.tabs.AddPage(self.help_panel, "Help")
@@ -176,13 +193,18 @@ class MainFrame(wx.Frame):
         self.client.add_share(code, path)
 
     def OnClose(self, evt):
-        self.Close()
-
-    def OnWinClose(self, evt):
         log.info("Saving config and exiting")
         if self.icon:
             self.icon.Destroy()
-        self.Destroy()
+        self.Close()
+
+    def OnWinClose(self, evt):
+        # If we have a systray icon, minimise into it
+        # If we don't have an icon, exit
+        if self.icon:
+            self.Hide()
+        else:
+            self.Destroy()
 
     def OnToggleVisible(self, evt):
         if self.IsShown():
