@@ -42,8 +42,8 @@ class MainFrame(wx.Frame):
         m_pause = menu.Append(2302, "&Restart Daemon")
         self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
         menu.AppendSeparator()
-        m_pause = menu.Append(2302, "View &Log")
-        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
+        m_view_log = menu.Append(2302, "View &Log")
+        self.Bind(wx.EVT_MENU, self.OnViewLog, m_view_log)
         menu.AppendSeparator()
         m_pause = menu.Append(2350, "&Pause Sync")
         self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
@@ -138,6 +138,12 @@ class MainFrame(wx.Frame):
         self.OnConnect(None)
 
         self.__init_gui(parent)
+
+    def OnViewLog(self, evt):
+        try:
+            self.log_area.SetValue(self.client.get_log_data())
+        except Exception as e:
+            pass
 
     def OnConnect(self, evt):
         try:
