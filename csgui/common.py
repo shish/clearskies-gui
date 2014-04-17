@@ -2,6 +2,8 @@ import os
 import sys
 import wx
 import logging
+import threading
+import requests
 
 
 def resource(path):
@@ -44,3 +46,29 @@ def icon_bundle(fn):
         except Exception:
             pass
     return icons
+
+
+myEVT_WEBLOAD = wx.NewEventType()
+EVT_WEBLOAD = wx.PyEventBinder(myEVT_WEBLOAD, 1)
+
+
+class WebLoadEvent(wx.PyCommandEvent):
+    def __init__(self, etype, eid, value=None):
+        wx.PyCommandEvent.__init__(self, etype, eid)
+        self._value = value
+
+    def GetValue(self):
+        return self._value
+
+
+def webload(parent, url, eid=-1):
+    t = threading.Thread(target=_webload, args=(parent, url, eid))
+    t.start()
+
+
+def _webload(parent, url, eid=-1):
+    try:
+        data = requests.get(url).text
+    except Exception as e:
+        data = "Couldn't get %s:\n%s" % (url, str(e))
+    wx.PostEvent(parent, WebLoadEvent(myEVT_WEBLOAD, eid, data))

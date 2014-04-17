@@ -8,6 +8,8 @@ from clearskies.client import ClearSkies
 from clearskies.exc import ClientException
 from csgui.common import icon_bundle, resource
 from csgui.trayicon import TrayIcon
+from csgui.config import ConfigPanel
+from csgui.news import NewsPanel
 
 __version__ = "0.0.0"
 log = logging.getLogger(__name__)
@@ -35,21 +37,21 @@ class MainFrame(wx.Frame):
 
         ################################################################
         menu = wx.Menu()
-        m_pause = menu.Append(2300, "&Start Daemon")
-        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
-        m_pause = menu.Append(2301, "S&top Daemon")
-        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
-        m_pause = menu.Append(2302, "&Restart Daemon")
-        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
+        m_start = menu.Append(2300, "&Start Daemon (TODO)")
+        self.Bind(wx.EVT_MENU, self.OnStart, m_start)
+        m_stop = menu.Append(2301, "S&top Daemon")
+        self.Bind(wx.EVT_MENU, self.OnStop, m_stop)
+        m_restart = menu.Append(2302, "&Restart Daemon")
+        self.Bind(wx.EVT_MENU, self.OnRestart, m_restart)
         menu.AppendSeparator()
         m_view_log = menu.Append(2302, "View &Log")
         self.Bind(wx.EVT_MENU, self.OnViewLog, m_view_log)
         menu.AppendSeparator()
         m_pause = menu.Append(2350, "&Pause Sync")
-        self.Bind(wx.EVT_MENU, self.OnCreate, m_pause)
+        self.Bind(wx.EVT_MENU, self.OnPause, m_pause)
         m_resume = menu.Append(2351, "R&esume Sync")
-        self.Bind(wx.EVT_MENU, self.OnCreate, m_resume)
-        menu_bar.Append(menu, "&Server (TODO)")
+        self.Bind(wx.EVT_MENU, self.OnResume, m_resume)
+        menu_bar.Append(menu, "&Server")
 
         ################################################################
         #menu = wx.Menu()
@@ -70,7 +72,16 @@ class MainFrame(wx.Frame):
 
         return menu_bar
 
-    def __init_gui(self, parent):
+    def __init__(self, parent, daemon):
+        log.info("Loading settings")
+        self.settings = {
+            "start-tray": True,
+            "daemon": daemon,
+        }
+
+        self.client = ClearSkies()
+        self.OnConnect(None)
+
         # init window
         try:
             # give this process an ID other than "python", else
@@ -79,14 +90,14 @@ class MainFrame(wx.Frame):
             import ctypes
             myappid = 'code.shishnet.org/csgui'
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-        except Exception as e:
+        except Exception:
             pass
 
         wx.Frame.__init__(self, parent, -1, "CSGUI [%s]" % __version__, size=(480, 320))
         self.Bind(wx.EVT_CLOSE, self.OnWinClose)
         try:
             self.SetIcons(icon_bundle(resource("icon.ico")))
-        except Exception as e:
+        except Exception:
             pass
 
         # bars
@@ -103,16 +114,17 @@ class MainFrame(wx.Frame):
         self.Layout()
 
         # add content to tabs
-        self.log_area = wx.TextCtrl(self.tabs, style=wx.TE_MULTILINE)
-        #self.news_panel = NewsPanel(self.tabs, "http://code.shishnet.org/eve-mlp/news.html")
-        #self.config_panel = ConfigPanel(self.tabs, self)
+        self.news_panel = NewsPanel(self.tabs, "http://code.shishnet.org/csgui/news.html")
         #self.status_panel = StatusPanel(self.tabs, self)
-        #self.help_panel = NewsPanel(self.tabs, resource("help.html"))
+        self.config_panel = ConfigPanel(self.tabs, self)
+        self.log_area = wx.TextCtrl(self.tabs, style=wx.TE_MULTILINE)
+        self.help_panel = NewsPanel(self.tabs, resource("help.html"))
 
-        self.tabs.AddPage(self.log_area, "Server Log")
-        #self.tabs.AddPage(self.config_panel, "Settings")
+        self.tabs.AddPage(self.news_panel, "News")
         #self.tabs.AddPage(self.status_panel, "Status")
-        #self.tabs.AddPage(self.help_panel, "Help")
+        self.tabs.AddPage(self.config_panel, "Settings")
+        self.tabs.AddPage(self.log_area, "Server Log")
+        self.tabs.AddPage(self.help_panel, "Help")
 
         # show the window and tray icon (if desired)
         show = True
@@ -121,42 +133,51 @@ class MainFrame(wx.Frame):
             if self.settings["start-tray"]:
                 log.info("Start-in-tray enabled, hiding main window")
                 show = False
-        except Exception as e:
+        except Exception:
             log.exception("Failed to create tray icon:")
             self.icon = None
 
         if show:
             self.Show(True)
 
-    def __init__(self, parent):
-        log.info("Loading settings")
-        self.settings = {
-            "start-tray": True,
-        }
-
-        self.client = ClearSkies()
-        self.OnConnect(None)
-
-        self.__init_gui(parent)
-
     def OnViewLog(self, evt):
         try:
             self.log_area.SetValue(self.client.get_log_data())
-        except Exception as e:
+        except Exception:
             pass
+
+    def OnStart(self, evt):
+        pass
+
+    def OnStop(self, evt):
+        self.client.stop()
+
+    def OnRestart(self, evt):
+        self.OnStop(evt)
+        self.OnStart(evt)
+
+    def OnPause(self, evt):
+        self.client.pause()
+
+    def OnResume(self, evt):
+        self.client.resume()
 
     def OnConnect(self, evt):
         try:
             log.info("Connecting to daemon")
             self.client.connect()
         except ClientException as e:
-            dlg = wx.MessageDialog(
-                None,
-                "Error connecting to daemon:\n%s" % e,
-                "CSGUI Error",
-                wx.ICON_ERROR | wx.OK
-            )
-            dlg.ShowModal()
+            if evt:
+                # if responding to user event, give a message
+                # about it not working; if background connection,
+                # be silent, we can auto-reconnect later
+                dlg = wx.MessageDialog(
+                    None,
+                    "Error connecting to daemon:\n%s" % e,
+                    "CSGUI Error",
+                    wx.ICON_ERROR | wx.OK
+                )
+                dlg.ShowModal()
             log.exception("Error connecting to daemon: %s", e)
 
     def OnCreate(self, evt):
