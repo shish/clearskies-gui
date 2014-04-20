@@ -1,25 +1,29 @@
 import wx
+from wx.lib.scrolledpanel import ScrolledPanel
+import sys
 
 
-class ConfigPanel(wx.Panel):
+class ConfigPanel(ScrolledPanel):
     def __init__(self, parent, main):
-        wx.Panel.__init__(self, parent)
+        ScrolledPanel.__init__(self, parent)
         self.main = main
+        self.control_to_key = {}
+        self.immediate = True
 
         bbox = wx.BoxSizer(wx.HORIZONTAL)
-        b_save = wx.Button(self, -1, "Save")
-        b_reset = wx.Button(self, -1, "Reset")
-        bbox.Add(b_save, 1, wx.EXPAND)
-        bbox.Add(b_reset, 1, wx.EXPAND)
+
+        if not self.immediate:
+            b_save = wx.Button(self, -1, "Save")
+            b_reset = wx.Button(self, -1, "Reset")
+            self.Bind(wx.EVT_BUTTON, self.OnSave, b_save)
+            self.Bind(wx.EVT_BUTTON, self.OnReset, b_reset)
+            bbox.Add(b_save, 1, wx.EXPAND)
+            bbox.Add(b_reset, 1, wx.EXPAND)
 
         box = wx.BoxSizer(wx.VERTICAL)
 
         self.lc_grid = wx.FlexGridSizer(0, 2)
         self.lc_grid.AddGrowableCol(1)
-
-        #self.Bind(ulc.EVT_LIST_ITEM_SELECTED, self.OnItemSelected, self.char_list)
-        self.Bind(wx.EVT_BUTTON, self.OnSave, b_save)
-        self.Bind(wx.EVT_BUTTON, self.OnReset, b_reset)
 
         box.Add(self.lc_grid, 1, wx.EXPAND)
         box.Add(bbox, 0, wx.EXPAND)
@@ -32,36 +36,49 @@ class ConfigPanel(wx.Panel):
 
     def update(self):
         self.lc_grid.Clear(True)
+        self.control_to_key = {}
+        config = self.main.client.get_config()
 
-        for n, (key, value) in enumerate(self.main.client.get_config().items()):
+        for n, (key, value) in enumerate(config.items()):
             name = wx.StaticText(self, label=key)
             self.lc_grid.Add(name, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
 
             if isinstance(value, bool):
-                check = wx.CheckBox(self, 4000 + n)
-                check.SetValue(value)
-                #self.Bind(wx.EVT_CHECKBOX, self.OnCheck, check)
-                self.lc_grid.Add(check, 1, wx.ALIGN_CENTER_VERTICAL)
+                control = wx.CheckBox(self)
+                evt = wx.EVT_CHECKBOX
 
             elif isinstance(value, int):
-                button = wx.TextCtrl(self, 4200 + n, str(value))
-                #self.Bind(wx.EVT_BUTTON, self.OnLaunch, button)
-                self.lc_grid.Add(button, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+                control = wx.SpinCtrl(self, min=0, max=2**30)
+                evt = wx.EVT_SPINCTRL
 
             elif isinstance(value, basestring):
-                button = wx.TextCtrl(self, 4200 + n, str(value))
-                #self.Bind(wx.EVT_BUTTON, self.OnLaunch, button)
-                self.lc_grid.Add(button, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+                control = wx.TextCtrl(self)
+                evt = wx.EVT_TEXT
 
             else:
-                button = wx.TextCtrl(self, 4200 + n, str(value))
-                #self.Bind(wx.EVT_BUTTON, self.OnLaunch, button)
-                self.lc_grid.Add(button, 1, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+                control = wx.TextCtrl(self)
+                evt = wx.EVT_TEXT
+                value = str(value)
+
+            control.SetValue(value)
+            self.Bind(evt, self.OnChange, control)
+            self.control_to_key[control] = key
+            self.lc_grid.Add(control, 1, wx.ALIGN_CENTER_VERTICAL | wx.EXPAND)
 
         self.Layout()
 
+    def OnChange(self, evt):
+        if self.immediate:
+            control = evt.GetEventObject()
+            key = self.control_to_key[control]
+            value = control.GetValue()
+            self.main.client.set_config_value(key, value)
+
     def OnSave(self, evt):
-        pass
+        to_set = {}
+        for control, key in self.control_to_key.items():
+            to_set[key] = control.GetValue()
+        self.main.client.set_config(to_set)
 
     def OnReset(self, evt):
-        pass
+        self.update()
