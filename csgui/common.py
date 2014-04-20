@@ -6,6 +6,9 @@ import threading
 import requests
 
 
+log = logging.getLogger(__name__)
+
+
 def resource(path):
     """
     Given that X was in our folder in development, where could it be now?
@@ -28,9 +31,10 @@ def resource(path):
         ideas.append(os.path.join(*parts))
     for p in ideas:
         if os.path.exists(p):
+            log.debug("Found %s at %s" % (path, p))
             return p
-    logging.warn("Can't find %s" % path)
-    logging.debug("Tried: %r" % ideas)
+    log.warn("Can't find %s" % path)
+    log.debug("Tried: %r" % ideas)
     return None
 
 
