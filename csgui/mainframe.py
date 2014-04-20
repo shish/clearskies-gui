@@ -10,6 +10,8 @@ from csgui.common import icon_bundle, resource
 from csgui.trayicon import TrayIcon
 from csgui.config import ConfigPanel
 from csgui.news import NewsPanel
+from csgui.log import LogPanel
+
 
 __version__ = "0.0.0"
 log = logging.getLogger(__name__)
@@ -43,9 +45,6 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnStop, m_stop)
         m_restart = menu.Append(2302, "&Restart Daemon")
         self.Bind(wx.EVT_MENU, self.OnRestart, m_restart)
-        menu.AppendSeparator()
-        m_view_log = menu.Append(2302, "View &Log")
-        self.Bind(wx.EVT_MENU, self.OnViewLog, m_view_log)
         menu.AppendSeparator()
         m_pause = menu.Append(2350, "&Pause Sync")
         self.Bind(wx.EVT_MENU, self.OnPause, m_pause)
@@ -115,15 +114,14 @@ class MainFrame(wx.Frame):
 
         # add content to tabs
         self.news_panel = NewsPanel(self.tabs, "http://code.shishnet.org/csgui/news.html")
-        #self.status_panel = StatusPanel(self.tabs, self)
         self.config_panel = ConfigPanel(self.tabs, self)
-        self.log_area = wx.TextCtrl(self.tabs, style=wx.TE_MULTILINE)
+        self.log_panel = LogPanel(self.tabs, self)
         self.help_panel = NewsPanel(self.tabs, resource("help.html"))
 
         self.tabs.AddPage(self.news_panel, "News")
         #self.tabs.AddPage(self.status_panel, "Status")
         self.tabs.AddPage(self.config_panel, "Settings")
-        self.tabs.AddPage(self.log_area, "Server Log")
+        self.tabs.AddPage(self.log_panel, "Server Log")
         self.tabs.AddPage(self.help_panel, "Help")
 
         # show the window and tray icon (if desired)
@@ -139,12 +137,6 @@ class MainFrame(wx.Frame):
 
         if show:
             self.Show(True)
-
-    def OnViewLog(self, evt):
-        try:
-            self.log_area.SetValue(self.client.get_log_data())
-        except Exception:
-            pass
 
     def OnStart(self, evt):
         pass
@@ -224,13 +216,16 @@ class MainFrame(wx.Frame):
         if self.icon:
             self.icon.Destroy()
         self.Close()
+        log.info("Closed")
 
     def OnWinClose(self, evt):
         # If we have a systray icon, minimise into it
         # If we don't have an icon, exit
         if self.icon:
+            log.info("Main window closed, hiding in systray")
             self.Hide()
         else:
+            log.info("Main window closed, exiting")
             self.Destroy()
 
     def OnToggleVisible(self, evt):
