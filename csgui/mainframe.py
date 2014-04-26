@@ -22,37 +22,55 @@ class MainFrame(wx.Frame):
         menu_bar = wx.MenuBar()
 
         ################################################################
+
         menu = wx.Menu()
+
         m_create = menu.Append(wx.ID_ADD, "&Create New Share\tAlt-C", "Create a new share")
         self.Bind(wx.EVT_MENU, self.OnCreate, m_create)
+
         m_attach = menu.Append(wx.ID_COPY, "&Attach To Share\tAlt-A", "Attach to an existing share")
         self.Bind(wx.EVT_MENU, self.OnAttach, m_attach)
+
         menu.AppendSeparator()
+
         m_exit = menu.Append(wx.ID_EXIT, "")
         self.Bind(wx.EVT_MENU, self.OnClose, m_exit)
+
         menu_bar.Append(menu, "&File")
 
         ################################################################
+
         menu = wx.Menu()
 
         menu_bar.Append(menu, "&Shares (TODO)")
 
         ################################################################
+
         menu = wx.Menu()
-        m_start = menu.Append(2300, "&Start Daemon (TODO)")
-        self.Bind(wx.EVT_MENU, self.OnStart, m_start)
+
+        if self.settings["daemon"]:
+            m_start = menu.Append(2300, "&Start Daemon (TODO)")
+            self.Bind(wx.EVT_MENU, self.OnStart, m_start)
+            
         m_stop = menu.Append(2301, "S&top Daemon")
         self.Bind(wx.EVT_MENU, self.OnStop, m_stop)
-        m_restart = menu.Append(2302, "&Restart Daemon")
-        self.Bind(wx.EVT_MENU, self.OnRestart, m_restart)
+
+        if self.settings["daemon"]:
+            m_restart = menu.Append(2302, "&Restart Daemon")
+            self.Bind(wx.EVT_MENU, self.OnRestart, m_restart)
+
         menu.AppendSeparator()
+
         m_pause = menu.Append(2350, "&Pause Sync")
         self.Bind(wx.EVT_MENU, self.OnPause, m_pause)
+
         m_resume = menu.Append(2351, "R&esume Sync")
         self.Bind(wx.EVT_MENU, self.OnResume, m_resume)
+
         menu_bar.Append(menu, "&Server")
 
         ################################################################
+
         #menu = wx.Menu()
         #
         #m_start_tray = menu.Append(2021, "Start in Systray", "", kind=wx.ITEM_CHECK)
@@ -64,9 +82,12 @@ class MainFrame(wx.Frame):
         #menu_bar.Append(menu, "&Options")
 
         ################################################################
+
         menu = wx.Menu()
+
         m_about = menu.Append(wx.ID_ABOUT, "")
         self.Bind(wx.EVT_MENU, self.OnAbout, m_about)
+
         menu_bar.Append(menu, "&Help")
 
         return menu_bar
