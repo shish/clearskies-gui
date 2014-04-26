@@ -51,7 +51,7 @@ class MainFrame(wx.Frame):
         if self.settings["daemon"]:
             m_start = menu.Append(2300, "&Start Daemon (TODO)")
             self.Bind(wx.EVT_MENU, self.OnStart, m_start)
-            
+
         m_stop = menu.Append(2301, "S&top Daemon")
         self.Bind(wx.EVT_MENU, self.OnStop, m_stop)
 
@@ -100,6 +100,7 @@ class MainFrame(wx.Frame):
         }
 
         self.client = ClearSkies()
+        self.daemon = None
         self.OnConnect(None)
 
         # init window
@@ -160,10 +161,16 @@ class MainFrame(wx.Frame):
             self.Show(True)
 
     def OnStart(self, evt):
+        # self.daemon = subprocess.Popen(self.settings["daemon"], shell=True)
         pass
 
     def OnStop(self, evt):
         self.client.stop()
+        # if self.daemon:
+        #     self.daemon.wait(3)
+        # if self.daemon.isalive:
+        #     self.daemon.kill()
+        # self.daemon = None
 
     def OnRestart(self, evt):
         self.OnStop(evt)
